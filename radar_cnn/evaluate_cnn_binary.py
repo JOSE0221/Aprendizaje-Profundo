@@ -9,9 +9,19 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, f1_score
+from sklearn.metrics import (
+    accuracy_score,
+    classification_report,
+    confusion_matrix,
+    f1_score,
+    recall_score,
+)
 from torch.utils.data import DataLoader
 
+from radar_cnn.binary_eval_helpers import (
+    per_subject_binary_table,
+    verify_and_print_subject_splits,
+)
 from radar_cnn.dataset import RadarSpectrogramDataset
 from radar_cnn.labels import parse_filename
 from radar_cnn.model import SmallRadarCNN
@@ -47,6 +57,11 @@ def main() -> None:
     ap.add_argument("--batch_size", type=int, default=8)
     ap.add_argument("--output_csv", type=str, default=None)
     ap.add_argument("--cache_dir", type=str, default=None)
+    ap.add_argument(
+        "--skip_split_verify",
+        action="store_true",
+        help="Do not assert disjoint train/val/test subjects or print subject-ID lists.",
+    )
     args = ap.parse_args()
 
     try:
@@ -75,6 +90,9 @@ def main() -> None:
     train_p, val_p, test_p = subject_train_val_test(
         all_files, parse_filename, seed=seed, fractions=frac
     )
+    if not args.skip_split_verify:
+        verify_and_print_subject_splits(train_p, val_p, test_p, parse_filename)
+
     if args.split == "train":
         paths = train_p
     elif args.split == "val":
@@ -102,8 +120,10 @@ def main() -> None:
     acc = accuracy_score(y_true, pred)
     macro_f1 = f1_score(y_true, pred, average="macro", zero_division=0)
     fall_f1 = f1_score(y_true, pred, average=None, labels=[1], zero_division=0)[0]
+    fall_recall_global = recall_score(y_true, pred, pos_label=1, zero_division=0)
     print(
-        f"Split={args.split}  n={len(y_true)}  accuracy={acc:.4f}  macro_f1={macro_f1:.4f}  fall_f1={fall_f1:.4f}"
+        f"Split={args.split}  n={len(y_true)}  accuracy={acc:.4f}  macro_f1={macro_f1:.4f} "
+        f"fall_f1={fall_f1:.4f}  fall_recall={fall_recall_global:.4f}"
     )
     print("\nConfusion matrix:\n", confusion_matrix(y_true, pred, labels=[0, 1]))
     print(
@@ -113,27 +133,34 @@ def main() -> None:
         ),
     )
 
-    rows = []
-    for sid in np.unique(sids):
-        m = sids == sid
-        acc_s = accuracy_score(y_true[m], pred[m])
-        mf1_s = f1_score(y_true[m], pred[m], average="macro", zero_division=0)
-        ff1_s = f1_score(y_true[m], pred[m], average=None, labels=[1], zero_division=0)[0]
-        rows.append(
-            {
-                "subject_id": int(sid),
-                "n_files": int(m.sum()),
-                "accuracy": acc_s,
-                "macro_f1": mf1_s,
-                "fall_f1": ff1_s,
-            }
+    df = per_subject_binary_table(sids, y_true, pred)
+
+    suff = df[df["n_true_fall"] >= 2]
+    if len(suff):
+        rr = suff["fall_recall"].astype(float)
+        print(
+            f"Subjects with n_true_fall>=2: {len(suff)}  "
+            f"mean fall_recall={rr.mean():.4f}  std={rr.std():.4f}",
+            flush=True,
         )
-    df = pd.DataFrame(rows).sort_values("subject_id")
     out_csv = args.output_csv or f"eval_cnn_binary_{args.split}_per_subject.csv"
     df.to_csv(out_csv, index=False)
     print(f"Per-subject metrics saved to {out_csv}")
     print("Subject macro-F1 mean:", df["macro_f1"].mean(), "std:", df["macro_f1"].std())
-    print("Subject fall-F1 mean:", df["fall_f1"].mean(), "std:", df["fall_f1"].std())
+    ff = df["fall_f1"].to_numpy(dtype=float)
+    print(
+        "Subject fall-F1 mean (nan subjects skipped):",
+        np.nanmean(ff),
+        "std:",
+        np.nanstd(ff),
+    )
+    rr = df["fall_recall"].to_numpy(dtype=float)
+    print(
+        "Subject fall_recall mean (nan subjects skipped):",
+        np.nanmean(rr),
+        "std:",
+        np.nanstd(rr),
+    )
 
 
 if __name__ == "__main__":

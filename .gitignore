@@ -5,3 +5,7 @@ Dataset_848.7z.part*
 # Extracted INSHEP IQ files (large ASCII; one complex per line)
 *.dat
 
+# Precomputed spectrogram / stats caches (regenerable; do not version)
+runs/cache/
+
+runs/cache/
