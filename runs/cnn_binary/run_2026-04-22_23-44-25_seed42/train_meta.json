@@ -1,0 +1,21 @@
+{
+  "timestamp_utc": "2026-04-22T23:44:25Z",
+  "git_commit": "523bcd9",
+  "model_type": "cnn_binary",
+  "mean": -2.3951907048750676,
+  "std": 1.344568914345592,
+  "train_files": 1398,
+  "val_files": 193,
+  "test_files": 163,
+  "shuffle_labels": false,
+  "best_metric": "val_macro_f1",
+  "patience": 8,
+  "epochs_ran": 27,
+  "early_stopped": true,
+  "use_head_bn": false,
+  "best_epoch": 19,
+  "best_val_macro_f1": 0.9691249400095985,
+  "best_val_loss": null,
+  "metrics_csv": "runs/cnn_binary/run_2026-04-22_23-44-25_seed42/metrics.csv",
+  "metrics_png": "runs/cnn_binary/run_2026-04-22_23-44-25_seed42/metrics.png"
+}
