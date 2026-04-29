@@ -1,0 +1,28 @@
+# 6-class LSTM on spectrogram-frame sequences (same preprocessing as binary LSTM).
+spectrogram:
+  range_bin_mode: band
+  fixed_range_bin: 32
+  range_band: [28, 36]
+  fixed_num_chirps: 5000
+  stft_nperseg: 128
+  stft_noverlap: 96
+  stft_window: hann
+  spec_height: 128
+  spec_width: 128
+  log_eps: 1.0e-6
+
+sequence:
+  seq_len: 16
+  frame_reduce: mean  # mean | max
+
+lstm:
+  hidden_size: 128
+  num_layers: 1
+  dropout: 0.0
+  bidirectional: false
+
+training:
+  split_fractions: [0.8, 0.1, 0.1]
+  weight_decay: 0.0001
+  # Extra weight on fall class (index FALL_CLASS_INDEX=5) in cross-entropy.
+  fall_loss_multiplier: 2.0

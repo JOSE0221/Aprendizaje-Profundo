@@ -15,11 +15,13 @@ sequence:
   # Build T steps by slicing spectrogram width into T chunks.
   seq_len: 16
   frame_reduce: mean  # mean | max
+  # Append Doppler centroid + delta (proxy velocity / accel); LSTM input F = spec_height + 2.
+  kinematic: true
 
 lstm:
   hidden_size: 128
   num_layers: 1
-  dropout: 0.0
+  dropout: 0.15
   bidirectional: false
 
 training:
