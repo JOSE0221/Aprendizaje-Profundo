@@ -24,13 +24,14 @@ def run_eval(
     model: nn.Module,
     loader: DataLoader,
     device: torch.device,
+    non_blocking: bool = False,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     model.eval()
     all_pred = []
     all_y = []
     all_sid = []
     for x, y, sid in loader:
-        x = x.to(device)
+        x = x.to(device, non_blocking=non_blocking)
         logits = model(x)
         pred = logits.argmax(dim=1).cpu().numpy()
         all_pred.append(pred)
@@ -55,16 +56,24 @@ def main() -> None:
         ckpt = torch.load(args.checkpoint, map_location="cpu")
 
     spec_cfg = SpectrogramConfig(**ckpt["spec_cfg"])
-    mean = float(ckpt["mean"])
-    std = float(ckpt["std"])
+    kinematic = bool(ckpt.get("kinematic", False))
+    raw_mean = ckpt["mean"]
+    raw_std = ckpt["std"]
+    if isinstance(raw_mean, list):
+        mean = np.array(raw_mean, dtype=np.float32)
+        std = np.array(raw_std, dtype=np.float32)
+    else:
+        mean = float(raw_mean)
+        std = float(raw_std)
     seed = int(ckpt.get("seed", 42))
     frac = tuple(ckpt.get("split_fractions", (0.8, 0.1, 0.1)))
 
     seq_len = int(ckpt.get("seq_len", 16))
     frame_reduce = str(ckpt.get("frame_reduce", "mean"))
     lstm_cfg = ckpt.get("lstm", {})
+    default_in = spec_cfg.spec_height + (2 if kinematic else 0)
     model = LSTMBinaryClassifier(
-        input_size=int(lstm_cfg.get("input_size", spec_cfg.spec_height)),
+        input_size=int(lstm_cfg.get("input_size", default_in)),
         hidden_size=int(lstm_cfg.get("hidden_size", 128)),
         num_layers=int(lstm_cfg.get("num_layers", 1)),
         dropout=float(lstm_cfg.get("dropout", 0.0)),
@@ -88,16 +97,25 @@ def main() -> None:
         seq_len=seq_len,
         frame_reduce=frame_reduce,
         binary_labels=True,
+        kinematic=kinematic,
         train_mean=mean,
         train_std=std,
         cache_dir=cache_dir,
         split_name=f"lstm_{args.split}",
     )
-    loader = DataLoader(ds, batch_size=args.batch_size, shuffle=False)
+    dev = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    pin = dev.type == "cuda"
+    loader = DataLoader(
+        ds,
+        batch_size=args.batch_size,
+        shuffle=False,
+        num_workers=0,
+        pin_memory=pin,
+    )
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = dev
     model = model.to(device)
-    pred, y_true, sids = run_eval(model, loader, device)
+    pred, y_true, sids = run_eval(model, loader, device, non_blocking=pin)
 
     acc = accuracy_score(y_true, pred)
     macro_f1 = f1_score(y_true, pred, average="macro", zero_division=0)

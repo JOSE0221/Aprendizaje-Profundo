@@ -16,6 +16,9 @@ ACTIVITY_NAMES = {
     6: "fall",
 }
 
+# 0-based PyTorch label for activity A06 (fall); see activity_to_label(6).
+FALL_CLASS_INDEX = 5
+
 
 def parse_filename(path: str | Path) -> tuple[int, int, int]:
     """

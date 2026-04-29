@@ -132,13 +132,14 @@ def train_one_epoch(
     optimizer: torch.optim.Optimizer,
     criterion: nn.Module,
     device: torch.device,
+    non_blocking: bool = False,
 ) -> float:
     model.train()
     total_loss = 0.0
     n = 0
     for x, y, _ in tqdm(loader, desc="train", leave=False):
-        x = x.to(device)
-        y = y.to(device)
+        x = x.to(device, non_blocking=non_blocking)
+        y = y.to(device, non_blocking=non_blocking)
         optimizer.zero_grad()
         logits = model(x)
         loss = criterion(logits, y)
@@ -155,6 +156,7 @@ def eval_epoch(
     loader: DataLoader,
     criterion: nn.Module,
     device: torch.device,
+    non_blocking: bool = False,
 ) -> tuple[float, np.ndarray, np.ndarray]:
     model.eval()
     total_loss = 0.0
@@ -162,8 +164,8 @@ def eval_epoch(
     all_y = []
     all_p = []
     for x, y, _ in loader:
-        x = x.to(device)
-        y = y.to(device)
+        x = x.to(device, non_blocking=non_blocking)
+        y = y.to(device, non_blocking=non_blocking)
         logits = model(x)
         loss = criterion(logits, y)
         total_loss += float(loss.item()) * x.size(0)
@@ -211,6 +213,7 @@ def main() -> None:
     lstm_cfg = cfg.get("lstm", {})
     seq_len = int(seq_cfg.get("seq_len", 16))
     frame_reduce = str(seq_cfg.get("frame_reduce", "mean"))
+    kinematic = bool(seq_cfg.get("kinematic", False))
     hidden_size = int(lstm_cfg.get("hidden_size", 128))
     num_layers = int(lstm_cfg.get("num_layers", 1))
     dropout = float(lstm_cfg.get("dropout", 0.0))
@@ -245,8 +248,15 @@ def main() -> None:
         cache_dir=cache_dir,
         max_files=args.stats_max_files,
         verbose=args.verbose,
+        kinematic=kinematic,
     )
-    print(f"Sequence normalization: mean={mean:.6f}, std={std:.6f}")
+    if kinematic:
+        print(
+            f"Sequence normalization (per feature, F={len(mean)}): mean[0,1,-2,-1]="
+            f"{float(mean[0]):.4f},{float(mean[1]):.4f},{float(mean[-2]):.4f},{float(mean[-1]):.4f}"
+        )
+    else:
+        print(f"Sequence normalization: mean={mean:.6f}, std={std:.6f}")
 
     y_train_true = np.array([activity_to_binary_label(parse_filename(p)[1]) for p in train_paths], dtype=np.int64)
     label_override: np.ndarray | None = None
@@ -260,6 +270,7 @@ def main() -> None:
         seq_len=seq_len,
         frame_reduce=frame_reduce,
         binary_labels=True,
+        kinematic=kinematic,
         train_mean=mean,
         train_std=std,
         cache_dir=cache_dir,
@@ -272,6 +283,7 @@ def main() -> None:
         seq_len=seq_len,
         frame_reduce=frame_reduce,
         binary_labels=True,
+        kinematic=kinematic,
         train_mean=mean,
         train_std=std,
         cache_dir=cache_dir,
@@ -281,8 +293,9 @@ def main() -> None:
     train_labels_for_weights = label_override if label_override is not None else y_train_true
     class_weights = class_weights_from_binary_labels(train_labels_for_weights, fall_loss_multiplier).to(device)
 
+    input_size = spec_cfg.spec_height + (2 if kinematic else 0)
     model = LSTMBinaryClassifier(
-        input_size=spec_cfg.spec_height,
+        input_size=input_size,
         hidden_size=hidden_size,
         num_layers=num_layers,
         dropout=dropout,
@@ -296,8 +309,24 @@ def main() -> None:
         weight_decay=float(train_cfg.get("weight_decay", 1e-4)),
     )
     criterion = nn.CrossEntropyLoss(weight=class_weights)
-    train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
-    val_loader = DataLoader(val_ds, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
+    pin_memory = device.type == "cuda"
+    persist = args.num_workers > 0
+    train_loader = DataLoader(
+        train_ds,
+        batch_size=args.batch_size,
+        shuffle=True,
+        num_workers=args.num_workers,
+        pin_memory=pin_memory,
+        persistent_workers=persist,
+    )
+    val_loader = DataLoader(
+        val_ds,
+        batch_size=args.batch_size,
+        shuffle=False,
+        num_workers=args.num_workers,
+        pin_memory=pin_memory,
+        persistent_workers=persist,
+    )
 
     timestamp_utc = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     git_commit = _git_commit_hash()
@@ -316,9 +345,17 @@ def main() -> None:
     last_epoch = 0
     early_stopped = False
 
+    def _jsonable_stats(m: object, s: object) -> tuple[object, object]:
+        if isinstance(m, np.ndarray):
+            return m.tolist(), np.asarray(s, dtype=np.float32).tolist()
+        return m, s
+
+    mean_ckpt, std_ckpt = _jsonable_stats(mean, std)
+
+    nb = device.type == "cuda" and pin_memory
     for epoch in range(args.epochs):
-        tr_loss = train_one_epoch(model, train_loader, optimizer, criterion, device)
-        val_loss, y_true, y_pred = eval_epoch(model, val_loader, criterion, device)
+        tr_loss = train_one_epoch(model, train_loader, optimizer, criterion, device, non_blocking=nb)
+        val_loss, y_true, y_pred = eval_epoch(model, val_loader, criterion, device, non_blocking=nb)
         macro_f1 = f1_score(y_true, y_pred, average="macro", zero_division=0)
         last_epoch = epoch + 1
         print(
@@ -341,8 +378,9 @@ def main() -> None:
                     "model": model.state_dict(),
                     "model_type": "lstm_binary",
                     "spec_cfg": spec_cfg.__dict__,
-                    "mean": mean,
-                    "std": std,
+                    "mean": mean_ckpt,
+                    "std": std_ckpt,
+                    "kinematic": kinematic,
                     "config_path": str(args.config),
                     "epoch": epoch,
                     "seed": args.seed,
@@ -354,11 +392,12 @@ def main() -> None:
                     "binary_labels": True,
                     "fall_loss_multiplier": fall_loss_multiplier,
                     "lstm": {
-                        "input_size": spec_cfg.spec_height,
+                        "input_size": input_size,
                         "hidden_size": hidden_size,
                         "num_layers": num_layers,
                         "dropout": dropout,
                         "bidirectional": bidirectional,
+                        "num_classes": 2,
                     },
                 },
                 best_path,
@@ -391,6 +430,8 @@ def main() -> None:
         "config_lstm": lstm_cfg,
         "config_training": train_cfg,
         "resolved": {
+            "kinematic": kinematic,
+            "input_size": input_size,
             "seq_len": seq_len,
             "frame_reduce": frame_reduce,
             "hidden_size": hidden_size,
@@ -409,8 +450,9 @@ def main() -> None:
                 "timestamp_utc": timestamp_utc,
                 "git_commit": git_commit,
                 "model_type": "lstm_binary",
-                "mean": mean,
-                "std": std,
+                "kinematic": kinematic,
+                "mean": mean_ckpt,
+                "std": std_ckpt,
                 "train_files": len(train_paths),
                 "val_files": len(val_paths),
                 "test_files": len(test_paths),
