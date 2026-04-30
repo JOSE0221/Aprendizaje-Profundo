@@ -1,0 +1,47 @@
+{
+  "train": {
+    "n": 1087,
+    "n_falls": 0,
+    "n_normal": 1087,
+    "n_subjects": 74,
+    "sessions": [
+      "dec2017_uog",
+      "feb2019_nghomes",
+      "feb2019_uog",
+      "jul2018_uog",
+      "jun2017_uog",
+      "mar2017_uog",
+      "mar2019_cumbria"
+    ]
+  },
+  "val": {
+    "n": 263,
+    "n_falls": 29,
+    "n_normal": 234,
+    "n_subjects": 16,
+    "sessions": [
+      "dec2017_uog",
+      "feb2019_nghomes",
+      "feb2019_uog",
+      "jul2018_uog",
+      "jun2017_uog",
+      "mar2017_uog",
+      "mar2019_cumbria"
+    ]
+  },
+  "test": {
+    "n": 262,
+    "n_falls": 29,
+    "n_normal": 233,
+    "n_subjects": 16,
+    "sessions": [
+      "dec2017_uog",
+      "feb2019_nghomes",
+      "feb2019_uog",
+      "jul2018_uog",
+      "jun2017_uog",
+      "mar2017_uog",
+      "mar2019_cumbria"
+    ]
+  }
+}

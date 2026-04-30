@@ -1,0 +1,28 @@
+# Required runtime dependencies — every package below is actually
+# imported by the codebase. Versions pinned to known-good releases.
+
+# Core scientific stack
+numpy>=1.24,<3.0
+scipy>=1.10,<2.0           # used in preprocess.py: butter, filtfilt, stft, get_window
+scikit-learn>=1.3,<2.0     # metrics in evaluator.py, trainer_vae.py, train_baseline.py,
+                           # data_summary.py
+
+# Deep learning
+torch>=2.0                 # model.py, dataset.py, trainer_vae.py, evaluator.py,
+                           # baselines.py, train_vae.py, train_baseline.py
+                           # For CUDA: install per pytorch.org instructions for
+                           # your CUDA version, then this requirement is satisfied.
+
+# Plotting (used by data_summary.py — `make summary`)
+matplotlib>=3.7
+
+# Tests
+pytest>=7.4                # test_critical_invariants.py
+
+# ---------------------------------------------------------------
+# Optional — uncomment if you want to extend the pipeline:
+#
+# pandas>=2.0              # convenient for reading manifest.csv
+# pyyaml>=6.0              # only if you want to actually load default.yaml
+# tqdm>=4.66               # progress bars for long preprocess loops
+# ---------------------------------------------------------------

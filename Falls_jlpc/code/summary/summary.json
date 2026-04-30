@@ -1,0 +1,199 @@
+{
+  "n_samples_with_features": 1752,
+  "n_manifest_rows": 1752,
+  "velocity_per_activity": {
+    "walking": {
+      "n": 312,
+      "mean": 10.840239780109382,
+      "std": 0.5966864628609587,
+      "p10": 9.994427984240302,
+      "p50": 10.903012346443965,
+      "p90": 11.508735254579742,
+      "max": 12.013504344692889
+    },
+    "sitting_down": {
+      "n": 312,
+      "mean": 9.253776415478127,
+      "std": 0.46983323134792465,
+      "p10": 8.78298216796875,
+      "p50": 9.085843622036638,
+      "p90": 9.984332602438043,
+      "max": 11.104919982489225
+    },
+    "standing_up": {
+      "n": 311,
+      "mean": 9.314044696216408,
+      "std": 0.7162322636687579,
+      "p10": 8.78298216796875,
+      "p50": 9.186797440059268,
+      "p90": 10.095381802262931,
+      "max": 11.104919982489225
+    },
+    "picking_up": {
+      "n": 309,
+      "mean": 9.192351533607436,
+      "std": 0.5594127081710295,
+      "p10": 8.78298216796875,
+      "p50": 9.186797440059268,
+      "p90": 9.691566530172414,
+      "max": 10.903012346443965
+    },
+    "drinking": {
+      "n": 310,
+      "mean": 8.999218733023671,
+      "std": 0.28460376863808484,
+      "p10": 8.68202834994612,
+      "p50": 8.883935985991378,
+      "p90": 9.388705076104525,
+      "max": 10.196335620285561
+    },
+    "falling": {
+      "n": 198,
+      "mean": 8.886485324830335,
+      "std": 0.3333525447918965,
+      "p10": 8.68202834994612,
+      "p50": 8.78298216796875,
+      "p90": 9.287751258081897,
+      "max": 10.701104710398706
+    }
+  },
+  "energy_per_activity": {
+    "walking": {
+      "n": 312,
+      "mean": -90.9084736869449,
+      "p10": -91.12980790343285,
+      "p50": -90.8688926423853,
+      "p90": -90.71472772823465
+    },
+    "sitting_down": {
+      "n": 312,
+      "mean": -91.70165648971263,
+      "p10": -92.18341358101826,
+      "p50": -91.7037350972233,
+      "p90": -91.236490802907
+    },
+    "standing_up": {
+      "n": 311,
+      "mean": -89.78145179661504,
+      "p10": -92.15250173453482,
+      "p50": -91.5402572503089,
+      "p90": -91.0873472518031
+    },
+    "picking_up": {
+      "n": 309,
+      "mean": -87.74580471550267,
+      "p10": -91.87197852291787,
+      "p50": -91.3985482895047,
+      "p90": -91.02763689427297
+    },
+    "drinking": {
+      "n": 310,
+      "mean": -91.69340191480471,
+      "p10": -92.45720849077803,
+      "p50": -91.57806728421741,
+      "p90": -91.18173558484592
+    },
+    "falling": {
+      "n": 198,
+      "mean": -92.46886801142492,
+      "p10": -93.17408075703999,
+      "p50": -92.4518882121697,
+      "p90": -91.85969050412619
+    }
+  },
+  "max_velocity_classifier_auroc_full_corpus": 0.17999167999167995,
+  "max_velocity_separation": {
+    "fall_p10": 8.68202834994612,
+    "fall_p50": 8.78298216796875,
+    "fall_p90": 9.287751258081897,
+    "non_fall_p10": 8.78298216796875,
+    "non_fall_p50": 9.186797440059268,
+    "non_fall_p90": 10.903012346443965
+  },
+  "manifest_summary": {
+    "dec2017_uog": {
+      "actual_files": 360,
+      "expected_files": 360,
+      "delta_files": 0,
+      "actual_subjects": 20,
+      "expected_subjects": 20,
+      "actual_falls": 60,
+      "expected_falls": "varies (~3 reps \u00d7 n subjects)",
+      "match": true,
+      "notes": "ok"
+    },
+    "mar2017_uog": {
+      "actual_files": 48,
+      "expected_files": 48,
+      "delta_files": 0,
+      "actual_subjects": 4,
+      "expected_subjects": 4,
+      "actual_falls": 8,
+      "expected_falls": "varies (~3 reps \u00d7 n subjects)",
+      "match": true,
+      "notes": "ok"
+    },
+    "jun2017_uog": {
+      "actual_files": 161,
+      "expected_files": 162,
+      "delta_files": -1,
+      "actual_subjects": 9,
+      "expected_subjects": 9,
+      "actual_falls": 27,
+      "expected_falls": "varies (~3 reps \u00d7 n subjects)",
+      "match": false,
+      "notes": "1 file(s) missing"
+    },
+    "jul2018_uog": {
+      "actual_files": 287,
+      "expected_files": 288,
+      "delta_files": -1,
+      "actual_subjects": 16,
+      "expected_subjects": 16,
+      "actual_falls": 48,
+      "expected_falls": "varies (~3 reps \u00d7 n subjects)",
+      "match": false,
+      "notes": "1 file(s) missing"
+    },
+    "feb2019_uog": {
+      "actual_files": 306,
+      "expected_files": 306,
+      "delta_files": 0,
+      "actual_subjects": 17,
+      "expected_subjects": 17,
+      "actual_falls": 52,
+      "expected_falls": "varies (~3 reps \u00d7 n subjects)",
+      "match": true,
+      "notes": "ok"
+    },
+    "feb2019_nghomes": {
+      "actual_files": 301,
+      "expected_files": 301,
+      "delta_files": 0,
+      "actual_subjects": 20,
+      "expected_subjects": 20,
+      "actual_falls": 3,
+      "expected_falls": null,
+      "match": true,
+      "notes": "3 unexpected fall file(s) in session marked has_falls=False"
+    },
+    "mar2019_cumbria": {
+      "actual_files": 289,
+      "expected_files": 289,
+      "delta_files": 0,
+      "actual_subjects": 20,
+      "expected_subjects": 20,
+      "actual_falls": 0,
+      "expected_falls": null,
+      "match": true,
+      "notes": "ok"
+    },
+    "TOTAL": {
+      "files": 1752,
+      "global_subjects": 106,
+      "falls": 198,
+      "elderly_files": 363,
+      "female_files": 420
+    }
+  }
+}

@@ -1,0 +1,51 @@
+# default.yaml — reference config (Makefile uses CLI flags, not this file)
+
+paths:
+  data_root: ".."          # Falling/ from inside Falling/code/
+  cache_dir: "cache"
+  runs_dir:  "runs"
+
+radar:
+  carrier_freq_hz:   5.8e9
+  bandwidth_hz:      400.0e6
+  chirp_duration_s:  1.0e-3
+  samples_per_chirp: 128
+
+preprocessing:
+  clutter_cutoff_hz: 0.0075
+  clutter_order:     4
+  range_min_m:       1.0
+  range_max_m:       4.5
+  bin_neighbors:     5
+  stft_window_s:     0.20
+  stft_overlap:      0.95
+  stft_nfft:         256
+  out_height:        128
+  out_width:         256
+
+splits:
+  strategy:                 subject_disjoint
+  train_frac:               0.70
+  val_frac:                 0.15
+  test_frac:                0.15
+  exclude_falls_from_train: true
+  seed:                     17
+
+model:
+  arch:         conv_vae
+  base_filters: 32
+  latent_dim:   64
+
+training:
+  epochs:           200
+  batch_size:       64
+  lr:               1.0e-3
+  weight_decay:     1.0e-4
+  beta_kl:          1.0
+  beta_kl_warmup:   20
+  patience:         30
+
+scoring:
+  recon_weight:   1.0
+  kl_weight:      0.5
+  target_recall:  0.95
